@@ -12,6 +12,9 @@ from google.cloud import speech
 load_dotenv()
 print("Environment variables loaded")
 
+# Get service type from environment
+service_type = os.getenv('SERVICE_TYPE', 'salon')
+
 # Initialize FastAPI
 app = FastAPI()
 
@@ -22,7 +25,7 @@ logger.info("Application starting up...")
 
 # Initialize services and contexts
 conversation_context = ConversationContext()
-ai_service = AIService()
+ai_service = AIService(service_type=service_type)
 
 streaming_config = speech.StreamingRecognitionConfig(
     config=speech.RecognitionConfig(
@@ -33,8 +36,8 @@ streaming_config = speech.StreamingRecognitionConfig(
     interim_results=True
 )
 
-# Initialize services and contexts with streaming config
-twilio_protocol = TwilioProtocol(
+# Create single protocol instance
+protocol = TwilioProtocol(
     conversation_context=conversation_context,
     ai_service=ai_service,
     streaming_config=streaming_config
@@ -46,14 +49,15 @@ def health_check():
     logger.info("Health check endpoint called")
     return {"status": "ok"}
 
-@app.post("/twilio-webhook")
-async def handle_twilio_call(request: Request):
-    return await twilio_protocol.handle_webhook(request)
+# Define routes using service type
+@app.post(f"/{service_type}/twilio-webhook")
+async def handle_call(request: Request):
+    return await protocol.handle_webhook(request)
 
-@app.post("/handle-input")
+@app.post(f"/{service_type}/handle-input")
 async def handle_input(request: Request):
-    return await twilio_protocol.handle_input(request)
+    return await protocol.handle_input(request)
 
-@app.websocket("/stream")
+@app.websocket(f"/{service_type}/stream")
 async def media_stream(websocket: WebSocket):
-    return await twilio_protocol.handle_stream(websocket)
+    return await protocol.handle_stream(websocket)

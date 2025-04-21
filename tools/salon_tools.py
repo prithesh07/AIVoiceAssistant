@@ -1,6 +1,6 @@
 from typing import List
 
-class Tools:
+class SalonTools:
     """Tools for the salon assistant"""
     @staticmethod
     def get_services() -> List[str]:
@@ -33,36 +33,7 @@ class Tools:
         service_lower = service.lower()
         return costs.get(service_lower, "Service not found")
 
-tools_definition = [
-    {
-        "type": "function",
-        "function": {
-            "name": "get_current_time",
-            "description": "Get the current time",
-            "parameters": {
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_weather",
-            "description": "Get weather information for a city",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "city": {
-                        "type": "string",
-                        "description": "The city name"
-                    }
-                },
-                "required": ["city"]
-            }
-        }
-    },
+salon_tools_definition = [
     {
         "type": "function",
         "function": {

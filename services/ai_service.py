@@ -1,30 +1,49 @@
 from openai import OpenAI
 import json
 import time
-from tools.tools import Tools, tools_definition
+from tools.salon_tools import SalonTools, salon_tools_definition
+from tools.restaurant_tools import RestaurantTools, restaurant_tools_definition
 
 class AIService:
     """Handles AI assistant setup and response logic."""
 
-    def __init__(self):
+    def __init__(self, service_type="salon"):
         """Initialize AI service and setup assistant."""
         self.client = OpenAI()
-        self.tools = Tools()
-        self.tools_definition = tools_definition
+        self.service_type = service_type
+        self.setup_tools()
         self.assistant = None
         self.thread = None
         self.current_run_id = None
         self._setup()
 
+    def setup_tools(self):
+        """Setup appropriate tools based on service type"""
+        if self.service_type == "salon":
+            self.tools = SalonTools()
+            self.tools_definition = salon_tools_definition
+        elif self.service_type == "restaurant":
+            self.tools = RestaurantTools()
+            self.tools_definition = restaurant_tools_definition
+
     def _setup(self):
         """Setup assistant and thread if not already created."""
         if not self.assistant:
-            self.assistant = self.client.beta.assistants.create(
-                name="Salon Assistant",
-                instructions="""You are a salon assistant. When asked about services or prices:
+            if self.service_type == "salon":
+                instructions = """You are a salon assistant. When asked about services or prices:
                 - Use get_services() to list available services
                 - Use get_service_cost() to check specific service prices
-                Give immediate, one-sentence answers. Be direct and concise.""",
+                Give immediate, one-sentence answers. Be direct and concise."""
+            else:
+                instructions = """You are a restaurant assistant. When asked about menu or prices:
+                - Use get_menu() to list available items
+                - Use get_item_price() to check specific item prices
+                - Use check_availability() to verify if items are available
+                Give immediate, one-sentence answers. Be direct and concise."""
+
+            self.assistant = self.client.beta.assistants.create(
+                name=f"{self.service_type.capitalize()} Assistant",
+                instructions=instructions,
                 model="gpt-4o-mini",
                 tools=self.tools_definition
             )

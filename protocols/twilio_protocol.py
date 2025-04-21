@@ -23,36 +23,47 @@ class TwilioProtocol:
     ):
         self.context = conversation_context
         self.ai_service = ai_service
+        self.service_type = ai_service.service_type
         self.streaming_config = streaming_config
         self.base_url = os.getenv('BASE_URL')
         self.websocket_url = os.getenv('WEBSOCKET_URL')
 
     async def handle_webhook(self, request: Request):
-        """Handle initial webhook from Twilio."""
+        """Processes initial Twilio webhook and sets up voice response."""
         try:
             form_data = await request.form()
             call_sid = form_data.get("CallSid")
-            from_number = form_data.get("From")
-            to_number = form_data.get("To")
             response = VoiceResponse()
+
+            service_websocket_url = f"{self.base_url}/{self.service_type}/stream"
+            service_action_url = f"{self.base_url}/{self.service_type}/handle-input"
+
             response.start().stream(
-                url=self.websocket_url 
+                url=service_websocket_url
             )
-            response.say("Hello, Welcome to our Salon. How may i assist you today?")
+
+            welcome_message = (
+                "Hello, Welcome to our Restaurant. How may I assist you today?"
+                if self.service_type == "restaurant"
+                else "Hello, Welcome to our Salon. How may I assist you today?"
+            )
+            response.say(welcome_message)
+
             gather = response.gather(
-                input='speech', 
-                timeout=5, 
-                action=f"{self.base_url}/handle-input"
+                input='speech',
+                timeout=5,
+                action=service_action_url
             )
+
             return Response(content=str(response), media_type="application/xml")
         except Exception as e:
-            logger.error(f"Error in handle_twilio_call: {str(e)}", exc_info=True)
+            logger.error(f"Error in handle_webhook: {str(e)}", exc_info=True)
             error_response = VoiceResponse()
             error_response.say("I'm sorry, there was an error processing your request.")
             return Response(content=str(error_response), media_type="application/xml")
 
     async def handle_input(self, request: Request):
-        """Handle speech input from user."""
+        """Processes user speech input and generates AI response."""
         try:
             form_data = await request.form()
             call_sid = form_data.get("CallSid")
@@ -67,7 +78,7 @@ class TwilioProtocol:
                 gather = response.gather(
                     input='speech', 
                     timeout=5, 
-                    action=f"{self.base_url}/handle-input"
+                    action=f"{self.base_url}/{self.service_type}/handle-input"
                 )
                 return Response(content=str(response), media_type="application/xml")
             response = VoiceResponse()
@@ -84,7 +95,7 @@ class TwilioProtocol:
             return Response(content=str(error_response), media_type="application/xml")
 
     async def handle_stream(self, websocket):
-        """Handle real-time audio stream from Twilio."""
+        """Manages real-time audio streaming from Twilio."""
         bridge = None
         try:
             await websocket.accept()
@@ -116,7 +127,7 @@ class TwilioProtocol:
             logger.info("WebSocket connection closed")
 
     async def on_transcription_response(self, response):
-        """Handle transcription results."""
+        """Handles transcription results from speech recognition."""
         if not response.results:
             return
         result = response.results[0]
