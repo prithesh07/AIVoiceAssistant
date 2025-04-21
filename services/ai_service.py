@@ -1,7 +1,7 @@
 from openai import OpenAI
 import json
 import time
-from .tools import Tools, tools_definition
+from tools.tools import Tools, tools_definition
 
 class AIService:
     """Handles AI assistant setup and response logic."""

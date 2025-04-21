@@ -8,7 +8,7 @@ import logging
 import json
 import base64
 import threading
-from speech_client_bridge import SpeechClientBridge
+from services.speech_client_service import SpeechClientService
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ class TwilioProtocol:
         bridge = None
         try:
             await websocket.accept()
-            bridge = SpeechClientBridge(self.streaming_config, self.on_transcription_response)
+            bridge = SpeechClientService(self.streaming_config, self.on_transcription_response)
             t = threading.Thread(target=bridge.start)
             t.start()
             while True:

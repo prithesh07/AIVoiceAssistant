@@ -2,7 +2,9 @@ import asyncio
 from google.cloud import speech
 from queue import Queue
 
-class SpeechClientBridge:
+class SpeechClientService:
+    """Handles real-time speech-to-text conversion."""
+
     def __init__(self, streaming_config, callback):
         self._callback = callback
         self._streaming_config = streaming_config
@@ -18,7 +20,6 @@ class SpeechClientBridge:
             
             try:
                 for response in responses:
-                    # Run callback in the event loop
                     asyncio.run_coroutine_threadsafe(
                         self._callback(response), 
                         self._loop
