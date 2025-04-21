@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Dict
+from typing import List
 
 class Message:
     def __init__(self, content: str, sender: str):

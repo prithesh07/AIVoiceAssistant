@@ -1,4 +1,4 @@
-from typing import Dict  # Add this import
+from typing import Dict
 from models.conversation import Conversation
 import logging
 
