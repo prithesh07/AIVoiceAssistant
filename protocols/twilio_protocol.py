@@ -22,6 +22,7 @@ class TwilioProtocol:
         self.context = conversation_context
         self.ai_service = ai_service
         self.streaming_config = streaming_config
+        self.base_url = os.getenv('BASE_URL')
         self.websocket_url = os.getenv('WEBSOCKET_URL')
 
     async def handle_webhook(self, request: Request):
@@ -37,16 +38,19 @@ class TwilioProtocol:
             
             response = VoiceResponse()
             
-            # Add <Start><Stream> to enable media streaming
             response.start().stream(
-                url=self.websocket_url  # Use environment variable
+                url=self.websocket_url 
             )
             
             # Add a greeting message
             response.say("Hello, Welcome to our Salon. How may i assist you today?")
             
             # Add Gather to keep the call open and collect input
-            gather = response.gather(input='speech', timeout=5, action='/handle-input')
+            gather = response.gather(
+                input='speech', 
+                timeout=5, 
+                action=f"{self.base_url}/handle-input"
+            )
             
             logger.info(f"Final TwiML response: {str(response)}")
             return Response(content=str(response), media_type="application/xml")
@@ -76,13 +80,21 @@ class TwilioProtocol:
                 response = VoiceResponse()
                 response.say(ai_response)
                 # Continue listening for more input
-                gather = response.gather(input='speech', timeout=5, action='/handle-input')
+                gather = response.gather(
+                    input='speech', 
+                    timeout=5, 
+                    action=f"{self.base_url}/handle-input"
+                )
                 
                 return Response(content=str(response), media_type="application/xml")
             
             # If no speech result, just continue listening
             response = VoiceResponse()
-            gather = response.gather(input='speech', timeout=5, action='/handle-input')
+            gather = response.gather(
+                input='speech', 
+                timeout=5, 
+                action=f"{self.base_url}/handle-input"
+            )
             return Response(content=str(response), media_type="application/xml")
             
         except Exception as e:

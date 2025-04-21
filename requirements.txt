@@ -10,3 +10,4 @@ requests
 google-cloud-speech
 aiohttp
 google-cloud-storage
+openai>=1.0.0
